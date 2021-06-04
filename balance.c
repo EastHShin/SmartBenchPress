@@ -98,7 +98,13 @@ void buzzerInit() {
         exit(0);
     }
 }
-void* socket_client(char const* argv[]) {
+
+int main(int argc, char const* argv[]) {
+    if (argc != 3) {
+        printf("Usage : %s <IP> <port>\n", argv[0]);
+        exit(1);
+    }
+
     struct sockaddr_in serv_addr;
 
     sock = socket(PF_INET, SOCK_STREAM, 0);
@@ -116,35 +122,6 @@ void* socket_client(char const* argv[]) {
         exit(1);
     }
 
-    char msg[2];
-    char on[2] = "1";
-    while (1) {
-        int str_len = read(sock, msg, sizeof(msg));
-        if (str_len == -1)
-            eixt(1);
-        printf("Receive message from Server : %s\n", msg);
-        if (strncmp(on, msg, 1) == 0) {
-            flag = 1;
-            b_on(BTN_L, 5000000, 3000);
-            b_on(BTN_R, 5000000, 3000);
-            flag = 0;
-        }
-    }
-    close(sock);
-}
-
-int main(int argc, char const* argv[]) {
-    if (argc != 3) {
-        printf("Usage : %s <IP> <port>\n", argv[0]);
-        exit(1);
-    }
-
-    int thr_id = pthread_create(&socket_thread, NULL, socket_client, (void*)argv);
-    if (thr_id < 0) {
-        perror("thread create error: ");
-        exit(0);
-    }
-
     float Acc_x, Acc_y, Acc_z;
     float Ax = 0, Ay = 0, Az = 0;
 
@@ -156,7 +133,44 @@ int main(int argc, char const* argv[]) {
     MPU6050_Init();                        /* Initializes MPU6050 */
     buzzerInit();
 
+    char msg[2];
+    char on[2] = "1";
     while (1) {
+        int str_len = read(sock, msg, sizeof(msg));
+        if (str_len == -1)
+            exit(1);
+        printf("Receive message from Server : %s\n", msg);
+        if (strncmp(on, msg, 1) == 0) {
+            if (PWMWriteDutyCycle(BTN_L, 0) == -1) {
+                exit(0);
+            }
+            if (PWMWritePeriod(BTN_L, 5000000) == -1) {
+                exit(0);
+            }
+            if (PWMWriteDutyCycle(BTN_L, (int)(5000000 * 0.5)) == -1) {
+                exit(0);
+            }
+            if (PWMWriteDutyCycle(BTN_R, 0) == -1) {
+                exit(0);
+            }
+            if (PWMWritePeriod(BTN_R, 5000000) == -1) {
+                exit(0);
+            }
+            if (PWMWriteDutyCycle(BTN_R, (int)(5000000 * 0.5)) == -1) {
+                exit(0);
+            }
+
+            usleep(1000000);
+
+            if (PWMWriteDutyCycle(BTN_L, 0) == -1) {
+                exit(0);
+            }
+            if (PWMWriteDutyCycle(BTN_R, 0) == -1) {
+                exit(0);
+            }
+            // usleep(100000);
+        }
+
         /*Read raw value of Accelerometer and gyroscope from MPU6050*/
         Acc_x = read_raw_data(ACCEL_XOUT_H);
         Acc_y = read_raw_data(ACCEL_YOUT_H);
@@ -169,14 +183,12 @@ int main(int argc, char const* argv[]) {
 
         // printf("\n Gx=%.3f °/s\tGy=%.3f °/s\tGz=%.3f °/s\tAx=%.3f g\tAy=%.3f g\tAz=%.3f g\n", Gx, Gy, Gz, Ax, Ay, Az);
         printf("\nAx=%.3f g\tAy=%.3f g\tAz=%.3f g\n", Ax, Ay, Az);
-        if (flag == 0) {
-            if (Ay > 0.3) {
-                printf("left\n");
-                b_on(BTN_L, 10000000, 1000);
-            } else if (Ay < -0.3) {
-                printf("right\n");
-                b_on(BTN_R, 10000000, 1000);
-            }
+        if (Ay > 0.3) {
+            printf("left\n");
+            b_on(BTN_L, 10000000, 1000);
+        } else if (Ay < -0.3) {
+            printf("right\n");
+            b_on(BTN_R, 10000000, 1000);
         }
         delay(500);
     }
@@ -190,7 +202,7 @@ void b_on(int btn_num, int tone, int dur) {  // ms
     if (PWMWritePeriod(btn_num, tone) == -1) {
         exit(0);
     }
-    if (PWMWriteDutyCycle(btn_num, (int)(tone * 0.9)) == -1) {
+    if (PWMWriteDutyCycle(btn_num, (int)(tone * 0.5)) == -1) {
         exit(0);
     }
 
