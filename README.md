@@ -24,3 +24,11 @@
    
 ### 3. Emergency Alarming Module 
 1. 압력센서(with ADC)
+
+## Contributer
+### 신동훈 (xldk78@ajou.ac.kr)
+Counting Module 구현
+### 정재욱 (br12345678@ajou.ac.kr)
+Emergency Alarming Module 구현
+### 민경현 (khmin1104@ajou.ac.kr)
+Balancing Module 구현
